@@ -1,0 +1,37 @@
+{
+  "name": "track-separator",
+  "version": "1.0.0",
+  "description": "App para separar tracks",
+  "main": "frontend/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "NODE_ENV=development npm start",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.5"
+  },
+  "dependencies": {
+    "axios": "^1.7.2"
+  },
+  "build": {
+    "appId": "com.trackseparator.app",
+    "productName": "TrackSeparator",
+    "mac": {
+      "category": "public.app-category.music",
+      "target": "dmg"
+    },
+    "files": ["frontend/**/*"],
+    "extraResources": [
+      {
+        "from": "../backend/dist",
+        "to": "backend/dist",
+        "filter": ["**/*"]
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    }
+  }
+}

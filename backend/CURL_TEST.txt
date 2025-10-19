@@ -1,0 +1,5 @@
+curl -X POST "http://localhost:8000/separate" -H "Content-Type: application/json" -d '{
+  "input_path": "/Users/YOU/Desktop/Test_Music/The_Emptiness_Machine.mp3",
+  "output_dir": "/Users/YOU/Desktop/Test_Music/Done",
+  "stem": "vocals"
+}'

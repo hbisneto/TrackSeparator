@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>TrackSeparator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+    button { padding: 10px 20px; font-size: 16px; margin: 10px; }
+    #status { margin-top: 20px; font-weight: bold; }
+    .progress { max-width: 500px; margin: 10px auto; }
+  </style>
+</head>
+<body>
+  <h1>TrackSeparator</h1>
+  <p>Selecione um arquivo de áudio e uma pasta para salvar o stem separado.</p>
+  
+  <div class="mb-3">
+    <label class="form-label">Escolha o arquivo de áudio:</label>
+    <button id="selectFileBtn" class="btn btn-primary">Selecionar Arquivo</button>
+    <p id="filePath" class="text-muted small">Nenhum arquivo selecionado</p>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Escolha a pasta para salvar:</label>
+    <button id="selectFolderBtn" class="btn btn-primary">Selecionar Pasta</button>
+    <p id="folderPath" class="text-muted small">Nenhuma pasta selecionada</p>
+  </div>
+
+  <div class="mb-3">
+    <label for="stemSelect" class="form-label">Escolha o stem a separar:</label>
+    <select id="stemSelect" class="form-select">
+      <option selected value="vocals">Vocals</option>
+      <option value="drums">Drums</option>
+      <option value="bass">Bass</option>
+      <option value="other">Other (Guitar/Outros)</option>
+    </select>
+  </div>
+  
+  <button id="separateBtn" class="btn btn-success">Iniciar Separação</button>
+  <div id="status"></div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const selectFileBtn = document.getElementById('selectFileBtn');
+    const selectFolderBtn = document.getElementById('selectFolderBtn');
+    const separateBtn = document.getElementById('separateBtn');
+    const stemSelect = document.getElementById('stemSelect');
+    const filePathEl = document.getElementById('filePath');
+    const folderPathEl = document.getElementById('folderPath');
+    const status = document.getElementById('status');
+
+    let selectedFilePath = '';
+    let selectedFolderPath = '';
+
+    // Selecionar arquivo via IPC
+    selectFileBtn.addEventListener('click', async () => {
+      const result = await ipcRenderer.invoke('select-file');
+      if (!result.canceled && result.filePaths.length > 0) {
+        selectedFilePath = result.filePaths[0];
+        filePathEl.textContent = selectedFilePath;
+      }
+    });
+
+    // Selecionar pasta via IPC
+    selectFolderBtn.addEventListener('click', async () => {
+      const result = await ipcRenderer.invoke('select-folder');
+      if (!result.canceled && result.filePaths.length > 0) {
+        selectedFolderPath = result.filePaths[0];
+        folderPathEl.textContent = selectedFolderPath;
+      }
+    });
+
+    // Iniciar separação
+    separateBtn.addEventListener('click', async () => {
+      if (!selectedFilePath || !selectedFolderPath) {
+        status.textContent = 'Selecione arquivo e pasta primeiro!';
+        return;
+      }
+
+      separateBtn.disabled = true;
+      status.innerHTML = `
+        <p>Processando áudio... (pode demorar minutos)</p>
+        <div class="progress">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+        </div>
+      `;
+
+      try {
+        const stem = stemSelect.value;
+        const result = await ipcRenderer.invoke('separate-track', { inputPath: selectedFilePath, outputDir: selectedFolderPath, stem });
+        if (result.success) {
+          status.innerHTML = `Sucesso! Stem salvo em: <br><code>${result.output_file}</code>`;
+        } else {
+          status.textContent = `Erro: ${result.error}`;
+        }
+      } catch (err) {
+        status.textContent = `Falha: ${err.message}`;
+      }
+      separateBtn.disabled = false;
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+</body>
+</html>
