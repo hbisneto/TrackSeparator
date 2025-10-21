@@ -5,7 +5,7 @@ a = Analysis(
     ['app.py'],
     pathex=[],
     binaries=[],
-    datas=[('models', 'models')],  # Inclui modelos Demucs se baixados
+    datas=[('models', 'models')],
     hiddenimports=[
         'demucs',
         'torch',
@@ -41,7 +41,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # True para ver logs; mude para False em produção
+    console=True,  # Change to False in production
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

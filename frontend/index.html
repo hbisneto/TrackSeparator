@@ -13,7 +13,7 @@
 </head>
 <body>
   <h1>TrackSeparator</h1>
-  <p>Selecione um arquivo de áudio e uma pasta para salvar o stem separado.</p>
+  <p>Selecione um arquivo de áudio e uma pasta para salvar o stem + instrumental.</p>
   
   <div class="mb-3">
     <label class="form-label">Escolha o arquivo de áudio:</label>
@@ -28,12 +28,11 @@
   </div>
 
   <div class="mb-3">
-    <label for="stemSelect" class="form-label">Escolha o stem a separar:</label>
-    <select id="stemSelect" class="form-select">
+    <label for="trackSelect" class="form-label">Escolha o track a separar (gera track + instrumental):</label>
+    <select id="trackSelect" class="form-select">
       <option selected value="vocals">Vocals</option>
       <option value="drums">Drums</option>
       <option value="bass">Bass</option>
-      <option value="other">Other (Guitar/Outros)</option>
     </select>
   </div>
   
@@ -41,65 +40,85 @@
   <div id="status"></div>
 
   <script>
-    const { ipcRenderer } = require('electron');
-    const selectFileBtn = document.getElementById('selectFileBtn');
-    const selectFolderBtn = document.getElementById('selectFolderBtn');
-    const separateBtn = document.getElementById('separateBtn');
-    const stemSelect = document.getElementById('stemSelect');
-    const filePathEl = document.getElementById('filePath');
-    const folderPathEl = document.getElementById('folderPath');
-    const status = document.getElementById('status');
+  const { ipcRenderer } = require('electron');
+  const selectFileBtn = document.getElementById('selectFileBtn');
+  const selectFolderBtn = document.getElementById('selectFolderBtn');
+  const separateBtn = document.getElementById('separateBtn');
+  const trackSelect = document.getElementById('trackSelect');
+  const filePathEl = document.getElementById('filePath');
+  const folderPathEl = document.getElementById('folderPath');
+  const status = document.getElementById('status');
 
-    let selectedFilePath = '';
-    let selectedFolderPath = '';
+  let selectedFilePath = '';
+  let selectedFolderPath = '';
+  let ws = null;  // WebSocket instance
 
-    // Selecionar arquivo via IPC
-    selectFileBtn.addEventListener('click', async () => {
-      const result = await ipcRenderer.invoke('select-file');
-      if (!result.canceled && result.filePaths.length > 0) {
-        selectedFilePath = result.filePaths[0];
-        filePathEl.textContent = selectedFilePath;
-      }
-    });
+  selectFileBtn.addEventListener('click', async () => {
+    const result = await ipcRenderer.invoke('select-file');
+    if (!result.canceled && result.filePaths.length > 0) {
+      selectedFilePath = result.filePaths[0];
+      filePathEl.textContent = selectedFilePath;
+    }
+  });
 
-    // Selecionar pasta via IPC
-    selectFolderBtn.addEventListener('click', async () => {
-      const result = await ipcRenderer.invoke('select-folder');
-      if (!result.canceled && result.filePaths.length > 0) {
-        selectedFolderPath = result.filePaths[0];
-        folderPathEl.textContent = selectedFolderPath;
-      }
-    });
+  selectFolderBtn.addEventListener('click', async () => {
+    const result = await ipcRenderer.invoke('select-folder');
+    if (!result.canceled && result.filePaths.length > 0) {
+      selectedFolderPath = result.filePaths[0];
+      folderPathEl.textContent = selectedFolderPath;
+    }
+  });
 
-    // Iniciar separação
-    separateBtn.addEventListener('click', async () => {
-      if (!selectedFilePath || !selectedFolderPath) {
-        status.textContent = 'Selecione arquivo e pasta primeiro!';
-        return;
-      }
+  separateBtn.addEventListener('click', async () => {
+    if (!selectedFilePath || !selectedFolderPath) {
+      status.textContent = 'Selecione arquivo e pasta primeiro!';
+      return;
+    }
 
-      separateBtn.disabled = true;
-      status.innerHTML = `
-        <p>Processando áudio... (pode demorar minutos)</p>
-        <div class="progress">
-          <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
-        </div>
-      `;
+    separateBtn.disabled = true;
+    let progress = 0;
+    status.innerHTML = `
+      <p>Processando áudio... (pode demorar minutos)</p>
+      <div class="progress">
+        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+      </div>
+    `;
 
-      try {
-        const stem = stemSelect.value;
-        const result = await ipcRenderer.invoke('separate-track', { inputPath: selectedFilePath, outputDir: selectedFolderPath, stem });
-        if (result.success) {
-          status.innerHTML = `Sucesso! Stem salvo em: <br><code>${result.output_file}</code>`;
-        } else {
-          status.textContent = `Erro: ${result.error}`;
+    // Conecta WebSocket pra progress
+    ws = new WebSocket('ws://localhost:8000/ws/progress');
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.progress !== undefined) {
+        progress = data.progress;
+        const bar = document.getElementById('progressBar');
+        bar.style.width = `${progress}%`;
+        bar.textContent = `${progress}%`;
+        bar.setAttribute('aria-valuenow', progress);
+        if (progress === 100) {
+          ws.close();  // Fecha WS no fim
         }
-      } catch (err) {
-        status.textContent = `Falha: ${err.message}`;
       }
-      separateBtn.disabled = false;
-    });
-  </script>
+    };
+    ws.onclose = () => console.log('WebSocket closed');
+
+    try {
+      const track = trackSelect.value;
+      const result = await ipcRenderer.invoke('separate-track', { 
+        input_path: selectedFilePath, 
+        output_dir: selectedFolderPath, 
+        track 
+      });
+      if (result.success) {
+        status.innerHTML += `<br>Sucesso! Arquivos salvos:<br><code>${result.output_file_track}</code><br><code>${result.output_file_instrumental}</code>`;
+      } else {
+        status.textContent = `Erro: ${result.error}`;
+      }
+    } catch (err) {
+      status.textContent = `Falha: ${err.message}`;
+    }
+    separateBtn.disabled = false;
+  });
+</script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 </body>
 </html>

@@ -19,6 +19,7 @@
     "appId": "com.trackseparator.app",
     "productName": "TrackSeparator",
     "mac": {
+      "productName": "TrackSeparator",
       "category": "public.app-category.music",
       "target": "dmg"
     },

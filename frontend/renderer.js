@@ -1,6 +1,4 @@
 const { ipcRenderer } = require('electron');
-
-// Exemplo de botão no HTML: <button id="separateBtn">Separar Track</button>
 document.getElementById('separateBtn').addEventListener('click', async () => {
   try {
     const result = await ipcRenderer.invoke('separate-track');

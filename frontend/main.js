@@ -37,7 +37,6 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// IPC pra selecionar arquivo
 ipcMain.handle('select-file', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
@@ -46,7 +45,6 @@ ipcMain.handle('select-file', async () => {
   return result;
 });
 
-// IPC pra selecionar pasta
 ipcMain.handle('select-folder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory'],
@@ -55,16 +53,13 @@ ipcMain.handle('select-folder', async () => {
   return result;
 });
 
-// IPC pra separar com stem
-ipcMain.handle('separate-track', async (event, { inputPath, outputDir, stem }) => {
+ipcMain.handle('separate-track', async (event, params) => {
   try {
-    const response = await axios.post('http://localhost:8000/separate', {
-      input_path: inputPath,
-      output_dir: outputDir,
-      stem: stem
-    }, { timeout: 600000 });
+    console.log('Received params:', params);
+    const response = await axios.post('http://localhost:8000/separate', params, { timeout: 0 });
     return { success: true, ...response.data };
   } catch (error) {
+    console.error('Axios error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.error || error.message);
   }
 });
