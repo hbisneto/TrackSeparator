@@ -1,43 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html data-bs-theme="dark">
 <head>
   <meta charset="UTF-8">
   <title>TrackSeparator</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+    h1 { text-align: center; }
     button { padding: 10px 20px; font-size: 16px; margin: 10px; }
     #status { margin-top: 20px; font-weight: bold; }
     .progress { max-width: 500px; margin: 10px auto; }
   </style>
 </head>
 <body>
-  <h1>TrackSeparator</h1>
-  <p>Selecione um arquivo de áudio e uma pasta para salvar o stem + instrumental.</p>
+  <div class="container my-4">
+    <h1>TrackSeparator</h1>
+    <p style="text-align: center;">Separate track and get the instrumental</p>
   
-  <div class="mb-3">
-    <label class="form-label">Escolha o arquivo de áudio:</label>
-    <button id="selectFileBtn" class="btn btn-primary">Selecionar Arquivo</button>
-    <p id="filePath" class="text-muted small">Nenhum arquivo selecionado</p>
+    <div class="mb-3" style="text-align: center;">
+      <label for="trackSelect" class="form-label">Choose the track to separate (You will get the track and instrumental):</label>
+      <select id="trackSelect" class="form-select">
+        <option selected value="vocals">Vocals</option>
+        <option value="drums">Drums</option>
+        <option value="bass">Bass</option>
+      </select>
+    </div>
+    
+    <div id="status" style="text-align: center;"></div>
   </div>
 
-  <div class="mb-3">
-    <label class="form-label">Escolha a pasta para salvar:</label>
-    <button id="selectFolderBtn" class="btn btn-primary">Selecionar Pasta</button>
-    <p id="folderPath" class="text-muted small">Nenhuma pasta selecionada</p>
-  </div>
+  <!-- Choose a file -->
+  <footer class="fixed-bottom bg-dark text-white py-3">
+    <div class="container">
+      <div class="row">
+        <div class="col-8">
+          <div class="mb-3">
+            <div class="row align-items-center g-2">
+              <div class="col-auto">
+                <label class="form-label mb-0">Pick an audio file:</label>
+              </div>
+              <div class="col">
+                <p id="filePath" class="text-muted small mb-0">File not selected yet...</p>
+              </div>
+              <div class="col-auto">
+                <button id="selectFileBtn" class="btn btn-primary btn-sm">...</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-  <div class="mb-3">
-    <label for="trackSelect" class="form-label">Escolha o track a separar (gera track + instrumental):</label>
-    <select id="trackSelect" class="form-select">
-      <option selected value="vocals">Vocals</option>
-      <option value="drums">Drums</option>
-      <option value="bass">Bass</option>
-    </select>
-  </div>
-  
-  <button id="separateBtn" class="btn btn-success">Iniciar Separação</button>
-  <div id="status"></div>
+        <div class="col">
+          <!-- Empty col to balance the first row -->
+        </div>
+      </div>
+
+      <!-- Choose folder -->
+      <div class="row">
+        <div class="col-8">
+          <div class="mb-3">
+            <div class="row align-items-center g-2">
+              <div class="col-auto">
+                <label class="form-label mb-0">Pick a folder to save:</label>
+              </div>
+              <div class="col">
+                <p id="folderPath" class="text-muted small mb-0">Folder not selected yet...</p>
+              </div>
+              <div class="col-auto">
+                <button id="selectFolderBtn" class="btn btn-primary btn-sm">...</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col d-flex justify-content-center align-items-center">
+          <button id="separateBtn" class="btn btn-success">Start Separation...</button>
+        </div>
+      </div>
+    </div>
+  </footer>
 
   <script>
   const { ipcRenderer } = require('electron');
@@ -51,7 +90,8 @@
 
   let selectedFilePath = '';
   let selectedFolderPath = '';
-  let ws = null;  // WebSocket instance
+  // WebSocket instance
+  let ws = null;
 
   selectFileBtn.addEventListener('click', async () => {
     const result = await ipcRenderer.invoke('select-file');
@@ -71,14 +111,17 @@
 
   separateBtn.addEventListener('click', async () => {
     if (!selectedFilePath || !selectedFolderPath) {
-      status.textContent = 'Selecione arquivo e pasta primeiro!';
+      status.textContent = 'First select file and folder!';
       return;
     }
 
     separateBtn.disabled = true;
+    selectFileBtn.disabled = true;
+    selectFolderBtn.disabled = true;
     let progress = 0;
     status.innerHTML = `
-      <p>Processando áudio... (pode demorar minutos)</p>
+      <p style="text-align: center;">Starting process:</p>
+      <p style="text-align: center;">The separation will start soon...</p>
       <div class="progress">
         <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
       </div>
@@ -94,12 +137,16 @@
         bar.style.width = `${progress}%`;
         bar.textContent = `${progress}%`;
         bar.setAttribute('aria-valuenow', progress);
-        if (progress === 100) {
-          ws.close();  // Fecha WS no fim
+        if(progress === 0){
+          status.innerHTML = `
+            <p style="text-align: center;">Processing audio... (It can take minutes)</p>
+            <div class="progress">
+              <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+          `;
         }
       }
-    };
-    ws.onclose = () => console.log('WebSocket closed');
+    };   
 
     try {
       const track = trackSelect.value;
@@ -108,15 +155,30 @@
         output_dir: selectedFolderPath, 
         track 
       });
+      console.log('Python Output:', result);
       if (result.success) {
-        status.innerHTML += `<br>Sucesso! Arquivos salvos:<br><code>${result.output_file_track}</code><br><code>${result.output_file_instrumental}</code>`;
+        ws.close();
+        ws.onclose = () => console.log('>> WebSocket is closed');
+        status.innerHTML += `
+        <br>Success! Files saved at:
+        <br>
+        <code>
+          ${result.output_file_track}
+        </code>
+        <br>
+        <code>
+          ${result.output_file_instrumental}
+        </code>`;
       } else {
-        status.textContent = `Erro: ${result.error}`;
+        status.textContent = `Error: ${result.error}`;
       }
     } catch (err) {
-      status.textContent = `Falha: ${err.message}`;
+      console.error('Full Error On IPC:', err);
+      status.textContent = `Failed: ${err.message}`;
     }
     separateBtn.disabled = false;
+    selectFileBtn.disabled = false;
+    selectFolderBtn.disabled = false;
   });
 </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>

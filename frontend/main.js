@@ -8,7 +8,7 @@ let pythonProcess;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 800,
+    width: 992,
     height: 600,
     webPreferences: {
       nodeIntegration: true,

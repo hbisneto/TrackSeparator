@@ -27,17 +27,19 @@ def delete(path, recursive=False):
 
 def separate(audio_file, output_dir, track="vocals", use_old_model=False, progress_queue=None):
     model = "mdx_extra_q" if use_old_model else "htdemucs"
-    command = f"demucs -n {model} --two-stems={track} --out {output_dir} {audio_file}"
-    print(command)
+    command = f'demucs -n {model} --two-stems={track} --out {output_dir} "{audio_file}"'
+    print(f"Executando comando: {command}")
     
     process = subprocess.Popen(
         command, shell=True, 
         stdout=subprocess.PIPE, 
-        stderr=subprocess.STDOUT, 
+        stderr=subprocess.STDOUT,
         text=True, 
         universal_newlines=True,
         bufsize=1
     )
+    
+    print(f"Processo Demucs iniciado com PID: {process.pid}")
     
     progress = 0
     full_output = ""
@@ -59,14 +61,11 @@ def separate(audio_file, output_dir, track="vocals", use_old_model=False, progre
                 except ValueError:
                     pass
     
-    stderr_output = process.stderr.read()
-    full_output += stderr_output
     returncode = process.returncode
+    print(f"Demucs terminou com returncode: {returncode}")
     
     if returncode != 0:
         error_msg = f"Demucs failed with code {returncode}. Output: {full_output[:500]}..."
-        if stderr_output:
-            error_msg += f"\nSTDERR: {stderr_output}"
         raise RuntimeError(error_msg)
     
     demucs_output_dir = join(output_dir, "htdemucs")
