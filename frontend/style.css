@@ -1,0 +1,37 @@
+h1 { 
+    text-align: center; 
+}
+button { 
+    padding: 10px 20px; 
+    font-size: 16px; 
+    margin: 10px; 
+}
+#status { 
+    margin-top: 20px; 
+    font-weight: bold; 
+}
+.progress { 
+    max-width: 500px; 
+    margin: 10px auto; 
+}
+#filePath, #folderPath {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.path-row {
+    flex-wrap: nowrap !important;
+}
+.path-col {
+    flex: 1;
+    min-width: 0;
+}
+.label-col {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+.btn-col {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}

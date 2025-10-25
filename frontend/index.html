@@ -4,33 +4,7 @@
   <meta charset="UTF-8">
   <title>TrackSeparator</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-  <style>
-    h1 { text-align: center; }
-    button { padding: 10px 20px; font-size: 16px; margin: 10px; }
-    #status { margin-top: 20px; font-weight: bold; }
-    .progress { max-width: 500px; margin: 10px auto; }
-    #filePath, #folderPath {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-    }
-    .path-row {
-      flex-wrap: nowrap !important;
-    }
-    .path-col {
-      flex: 1;
-      min-width: 0; /* Permite que o col encolha e o ellipsis funcione */
-    }
-    .label-col {
-      flex: 0 0 auto;
-      white-space: nowrap;
-    }
-    .btn-col {
-      flex: 0 0 auto;
-      white-space: nowrap;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container my-4">
@@ -114,7 +88,7 @@
 
   function shortenPath(path) {
     if (!path || path.length <= 60) return path;
-    
+
     const userMatch = path.match(/^\/Users\/([^\/]+)/);
     if (userMatch) {
       const username = userMatch[1];
