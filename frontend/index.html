@@ -9,6 +9,27 @@
     button { padding: 10px 20px; font-size: 16px; margin: 10px; }
     #status { margin-top: 20px; font-weight: bold; }
     .progress { max-width: 500px; margin: 10px auto; }
+    #filePath, #folderPath {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .path-row {
+      flex-wrap: nowrap !important;
+    }
+    .path-col {
+      flex: 1;
+      min-width: 0; /* Permite que o col encolha e o ellipsis funcione */
+    }
+    .label-col {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+    .btn-col {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -34,14 +55,14 @@
       <div class="row">
         <div class="col-8">
           <div class="mb-3">
-            <div class="row align-items-center g-2">
-              <div class="col-auto">
+            <div class="row align-items-center g-2 path-row">
+              <div class="col-auto label-col">
                 <label class="form-label mb-0">Pick an audio file:</label>
               </div>
-              <div class="col">
+              <div class="col path-col">
                 <p id="filePath" class="text-muted small mb-0">File not selected yet...</p>
               </div>
-              <div class="col-auto">
+              <div class="col-auto btn-col">
                 <button id="selectFileBtn" class="btn btn-primary btn-sm">...</button>
               </div>
             </div>
@@ -57,14 +78,14 @@
       <div class="row">
         <div class="col-8">
           <div class="mb-3">
-            <div class="row align-items-center g-2">
-              <div class="col-auto">
+            <div class="row align-items-center g-2 path-row">
+              <div class="col-auto label-col">
                 <label class="form-label mb-0">Pick a folder to save:</label>
               </div>
-              <div class="col">
+              <div class="col path-col">
                 <p id="folderPath" class="text-muted small mb-0">Folder not selected yet...</p>
               </div>
-              <div class="col-auto">
+              <div class="col-auto btn-col">
                 <button id="selectFolderBtn" class="btn btn-primary btn-sm">...</button>
               </div>
             </div>
@@ -90,6 +111,23 @@
 
   let selectedFilePath = '';
   let selectedFolderPath = '';
+
+  function shortenPath(path) {
+    if (!path || path.length <= 60) return path;
+    
+    const userMatch = path.match(/^\/Users\/([^\/]+)/);
+    if (userMatch) {
+      const username = userMatch[1];
+      path = '~' + path.substring('/Users/'.length + username.length);
+    }
+
+    const parts = path.split('/').filter(p => p);
+    if (parts.length <= 4) return path;
+
+    const truncated = '/' + parts[0] + '/.../' + parts.slice(-3).join('/');
+    return truncated.length < path.length ? truncated : path;
+  }
+
   // WebSocket instance
   let ws = null;
 
@@ -97,7 +135,7 @@
     const result = await ipcRenderer.invoke('select-file');
     if (!result.canceled && result.filePaths.length > 0) {
       selectedFilePath = result.filePaths[0];
-      filePathEl.textContent = selectedFilePath;
+      filePathEl.textContent = shortenPath(selectedFilePath);
     }
   });
 
@@ -105,7 +143,7 @@
     const result = await ipcRenderer.invoke('select-folder');
     if (!result.canceled && result.filePaths.length > 0) {
       selectedFolderPath = result.filePaths[0];
-      folderPathEl.textContent = selectedFolderPath;
+      folderPathEl.textContent = shortenPath(selectedFolderPath);
     }
   });
 
@@ -118,6 +156,7 @@
     separateBtn.disabled = true;
     selectFileBtn.disabled = true;
     selectFolderBtn.disabled = true;
+    status.hidden = false; // Show status
     let progress = 0;
     status.innerHTML = `
       <p style="text-align: center;">Starting process:</p>
@@ -179,6 +218,7 @@
     separateBtn.disabled = false;
     selectFileBtn.disabled = false;
     selectFolderBtn.disabled = false;
+    status.hidden = true; // Hide status
   });
 </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
