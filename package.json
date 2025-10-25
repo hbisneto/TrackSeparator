@@ -23,12 +23,16 @@
       "category": "public.app-category.music",
       "target": "dmg"
     },
-    "files": ["frontend/**/*"],
+    "files": [
+      "frontend/**/*"
+    ],
     "extraResources": [
       {
         "from": "../backend/dist",
         "to": "backend/dist",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "directories": {
