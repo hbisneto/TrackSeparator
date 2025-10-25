@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const axios = require('axios');
+const fs = require('fs');
 
 let mainWindow;
 let pythonProcess;
@@ -61,5 +62,56 @@ ipcMain.handle('separate-track', async (event, params) => {
   } catch (error) {
     console.error('Axios error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.error || error.message);
+  }
+});
+
+ipcMain.handle('get-audio-bitrate', async (event, filePath) => {
+  try {
+    if (!fs.existsSync(filePath)) {
+      throw new Error('File not found');
+    }
+    
+    return new Promise((resolve, reject) => {
+      const ffprobe = spawn('ffprobe', [
+        '-v', 'quiet',
+        '-print_format', 'json',
+        '-show_format', filePath
+      ]);
+      
+      let output = '';
+      ffprobe.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+      
+      ffprobe.stderr.on('data', (data) => {
+        console.error(`ffprobe stderr: ${data}`);
+      });
+      
+      ffprobe.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`ffprobe failed with code ${code}`));
+          return;
+        }
+        
+        try {
+          const info = JSON.parse(output);
+          console.log('ffprobe output:', info);
+          const bitrate = info.format.bit_rate ? `${(parseInt(info.format.bit_rate) / 1000).toFixed(0)}` : 'Unknown';
+          const sampleRate = info.format.sample_rate ? `${info.format.sample_rate} Hz` : 'Unknown';
+          const duration = info.format.duration ? `${parseFloat(info.format.duration).toFixed(2)}` : 'Unknown';
+          
+          resolve({
+            bitrate,
+            sampleRate,
+            duration
+          });
+        } catch (parseErr) {
+          reject(new Error(`Failed to parse ffprobe output: ${parseErr.message}`));
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Metadata error:', error);
+    throw new Error(`Failed to read metadata: ${error.message}`);
   }
 });
