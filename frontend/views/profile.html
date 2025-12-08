@@ -1,0 +1,49 @@
+<!-- views/profile.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e; 
+            color: #d4d4d4; 
+            padding: 20px; 
+            margin: 0; 
+            height: 100vh; 
+            overflow: auto;
+        }
+        h1 { color: #ffffff; margin-bottom: 20px; font-size: 24px; }
+        h2 { color: #ffffff; margin: 20px 0 10px 0; font-size: 18px; }
+        p, li { line-height: 1.5; margin-bottom: 10px; color: #d4d4d4; }
+        ul { list-style-type: disc; padding-left: 20px; }
+        .card { background-color: #252526; padding: 15px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #007acc; }
+        button { width: 100%; padding: 8px; background-color: #007acc; color: #ffffff; cursor: pointer; border: none; border-radius: 4px; margin-top: 10px; }
+        button:hover { background-color: #005a9e; }
+    </style>
+</head>
+<body>
+    <h1>Perfil do Usuário</h1>
+    <div class="card">
+        <h2>Informações Pessoais</h2>
+        <p>Nome: João Silva</p>
+        <p>Email: joao@exemplo.com</p>
+        <p>Data de Nascimento: 15/05/1990</p>
+    </div>
+    <div class="card">
+        <h2>Atividades Recentes</h2>
+        <ul>
+            <li>Login em 28/10/2025</li>
+            <li>Atualização de perfil em 20/10/2025</li>
+            <li>Acesso ao Dashboard em 15/10/2025</li>
+        </ul>
+    </div>
+    <button id="edit-btn">Editar Perfil</button>
+    <p>Esta página pode integrar com autenticação no Electron (Node.js backend).</p>
+    <script>
+        document.getElementById('edit-btn').addEventListener('click', () => {
+            alert('Modo edição ativado! (Simulado)');
+        });
+    </script>
+</body>
+</html>

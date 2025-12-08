@@ -1,0 +1,276 @@
+<div class="container my-4">
+  <h1>TrackSeparator</h1>
+  <p style="text-align: center;">Separate track and get the instrumental</p>
+
+  <div class="mb-3" style="text-align: center;">
+    <label for="trackSelect" class="form-label">Choose the track to separate (You will get the track and instrumental):</label>
+    <select id="trackSelect" class="form-select">
+      <option selected value="vocals">Vocals</option>
+      <option value="drums">Drums</option>
+      <option value="bass">Bass</option>
+    </select>
+    
+    <footer class="fixed-bottom bg-dark text-white py-3">
+      <div class="container">
+        <!-- Choose a file -->
+        <div class="row">
+          <div class="col-8">
+            <div class="mb-3">
+              <div class="row align-items-center g-2 path-row">
+                <div class="col-auto label-col">
+                  <label class="form-label mb-0">Pick an audio file:</label>
+                </div>
+                <div class="col path-col">
+                  <p id="filePath" class="text-muted small mb-0">File not selected yet...</p>
+                </div>
+                <div class="col-auto btn-col">
+                  <button id="selectFileBtn" class="btn btn-primary btn-sm">...</button>
+                </div>
+              </div>
+              
+              <!-- Bit Rate Options-->
+              <div class="row align-items-center g-2 path-row">
+                <div class="col-auto label-col">
+                  <label id="bitRateLabel" class="form-label small mb-0">Bit Rate:</label>
+                </div>
+                <div class="col path-col">
+                  <p id="bitRate" class="text-muted small mb-0">Loading bit rate...</p>
+                </div>
+              </div>
+              <!-- Bit Rate Options-->
+              
+              <!-- Sample Rate Options-->
+              <div class="row align-items-center g-2 path-row">
+                <div class="col-auto label-col">
+                  <label id="sampleRateLabel" class="form-label small mb-0">Sample Rate:</label>
+                </div>
+                <div class="col path-col">
+                  <p id="sampleRate" class="text-muted small mb-0">Loading sample rate...</p>
+                </div>
+              </div>
+              <!-- Sample Rate Options-->
+              
+              <!-- Duration Options-->
+              <div class="row align-items-center g-2 path-row">
+                <div class="col-auto label-col">
+                  <label id="durationLabel" class="form-label small mb-0">Duration:</label>
+                </div>
+                <div class="col path-col">
+                  <p id="duration" class="text-muted small mb-0">Getting audio duration...</p>
+                </div>
+              </div>
+              <!-- Duration Options-->
+    
+            </div>
+          </div>
+    
+          <div class="col">
+            <!-- Empty col to balance the first row -->
+          </div>
+        </div>
+    
+        <!-- Choose folder -->
+        <div class="row">
+          <div class="col-8">
+            <div class="mb-3">
+              <div class="row align-items-center g-2 path-row">
+                <div class="col-auto label-col">
+                  <label class="form-label mb-0">Pick a folder to save:</label>
+                </div>
+                <div class="col path-col">
+                  <p id="folderPath" class="text-muted small mb-0">Folder not selected yet...</p>
+                </div>
+                <div class="col-auto btn-col">
+                  <button id="selectFolderBtn" class="btn btn-primary btn-sm">...</button>
+                </div>
+              </div>
+            </div>
+          </div>
+    
+          <div class="col d-flex justify-content-center align-items-center">
+            <button id="separateBtn" class="btn btn-success">Start Separation...</button>
+          </div>
+        </div>
+        <!-- Status with progressbar -->
+        <div id="status" style="text-align: center;"></div>
+        <!-- Status with progressbar -->
+      </div>
+    </footer>
+  </div>
+</div>
+
+
+<script>
+  console.log('Renderer process loaded');
+  const { ipcRenderer } = require('electron');
+  console.log('Renderer process loaded');
+  const selectFileBtn = document.getElementById('selectFileBtn');
+  const selectFolderBtn = document.getElementById('selectFolderBtn');
+  const separateBtn = document.getElementById('separateBtn');
+  const trackSelect = document.getElementById('trackSelect');
+  const filePathEl = document.getElementById('filePath');
+  const folderPathEl = document.getElementById('folderPath');
+  const status = document.getElementById('status');
+  const bitRateLabelEl = document.getElementById('bitRateLabel');
+  const sampleRateLabelEl = document.getElementById('sampleRateLabel');
+  const durationLabelEl = document.getElementById('durationLabel');
+  const bitRateEl = document.getElementById('bitRate');
+  const sampleRateEl = document.getElementById('sampleRate');
+  const durationEl = document.getElementById('duration');
+  
+  // Hide metadata labels and values initially
+  bitRateLabelEl.hidden = true;
+  sampleRateLabelEl.hidden = true;
+  durationLabelEl.hidden = true;
+  bitRateEl.hidden = true;
+  bitRateEl.textContent = 'Loading bit rate...';
+  sampleRateEl.hidden = true;
+  sampleRateEl.textContent = 'Loading sample rate...';
+  durationEl.hidden = true;
+  durationEl.textContent = 'Loading duration...';
+  // Hide metadata labels and values initially
+
+
+  let selectedFilePath = '';
+  let selectedFolderPath = '';
+
+  function shortenPath(path) {
+    if (!path || path.length <= 60) return path;
+
+    const userMatch = path.match(/^\/Users\/([^\/]+)/);
+    if (userMatch) {
+      const username = userMatch[1];
+      path = '~' + path.substring('/Users/'.length + username.length);
+    }
+
+    const parts = path.split('/').filter(p => p);
+    if (parts.length <= 4) return path;
+
+    const truncated = '/' + parts[0] + '/.../' + parts.slice(-3).join('/');
+    return truncated.length < path.length ? truncated : path;
+  }
+
+  // WebSocket instance
+  let ws = null;
+
+  selectFileBtn.addEventListener('click', async () => {
+    const result = await ipcRenderer.invoke('select-file');
+    if (!result.canceled && result.filePaths.length > 0) {
+      selectedFilePath = result.filePaths[0];
+      filePathEl.textContent = shortenPath(selectedFilePath);
+
+      try {
+        const metadata = await ipcRenderer.invoke('get-audio-bitrate', selectedFilePath);
+        bitRateEl.innerHTML = `
+          ${metadata.bitrate} kbps
+        `;
+        const br = parseInt(metadata.bitrate);
+        if(br < 192){
+          bitRateEl.innerHTML += ` <span class="text-warning">(Low quality audio detected)</span>`;
+        }
+        sampleRateEl.innerHTML = `
+          ${metadata.sampleRate}
+        `;
+        const timeSec = parseFloat(metadata.duration);
+        const totalSeconds = Math.ceil(timeSec);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        durationEl.innerHTML = `
+        ${metadata.duration} seconds - (${minutes} min ${seconds} sec)
+        `;
+      } catch (err) {
+        bitRateEl.textContent = `Error reading metadata: ${err.message}`;
+      }
+      bitRateLabelEl.hidden = false;
+      sampleRateLabelEl.hidden = false;
+      durationLabelEl.hidden = false;
+      bitRateEl.hidden = false;
+      sampleRateEl.hidden = false;
+      durationEl.hidden = false;
+    }
+  });
+
+  selectFolderBtn.addEventListener('click', async () => {
+    const result = await ipcRenderer.invoke('select-folder');
+    if (!result.canceled && result.filePaths.length > 0) {
+      selectedFolderPath = result.filePaths[0];
+      folderPathEl.textContent = shortenPath(selectedFolderPath);
+    }
+  });
+
+  separateBtn.addEventListener('click', async () => {
+    if (!selectedFilePath || !selectedFolderPath) {
+      status.textContent = 'First select file and folder!';
+      status.hidden = false;
+      return;
+    }
+
+    separateBtn.disabled = true;
+    selectFileBtn.disabled = true;
+    selectFolderBtn.disabled = true;
+    status.hidden = false;
+    let progress = 0;
+    status.innerHTML = `
+      <p style="text-align: center;">Starting process: The separation will start soon...</p>
+      <div class="progress">
+        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+      </div>
+    `;
+
+    // Conect WebSocket for progress
+    ws = new WebSocket('ws://localhost:8000/ws/progress');
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.progress !== undefined) {
+        progress = data.progress;
+        const bar = document.getElementById('progressBar');
+        bar.style.width = `${progress}%`;
+        bar.textContent = `${progress}%`;
+        bar.setAttribute('aria-valuenow', progress);
+        if(progress === 0){
+          status.innerHTML = `
+            <p style="text-align: center;">Processing audio: Please wait...</p>
+            <div class="progress">
+              <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+          `;
+        }
+      }
+    };   
+
+    try {
+      const track = trackSelect.value;
+      const result = await ipcRenderer.invoke('separate-track', { 
+        input_path: selectedFilePath, 
+        output_dir: selectedFolderPath, 
+        track 
+      });
+      console.log('Python Output:', result);
+      if (result.success) {
+        ws.close();
+        ws.onclose = () => console.log('>> WebSocket is closed');
+        status.innerHTML += `
+        <br>Success! Files saved at:
+        <br>
+        <code>
+          ${result.output_file_track}
+        </code>
+        <br>
+        <code>
+          ${result.output_file_instrumental}
+        </code>`;
+      } else {
+        status.textContent = `Error: ${result.error}`;
+      }
+    } catch (err) {
+      console.error('Full Error On IPC:', err);
+      status.textContent = `Failed: ${err.message}`;
+      return;
+    }
+    separateBtn.disabled = false;
+    selectFileBtn.disabled = false;
+    selectFolderBtn.disabled = false;
+    status.hidden = true; // Hide status
+  });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>

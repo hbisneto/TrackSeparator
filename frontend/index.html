@@ -1,284 +1,203 @@
+<!-- index.html (Arquivo Principal) -->
 <!DOCTYPE html>
-<html data-bs-theme="dark">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>TrackSeparator</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+    <title>Interface VS Code com Activity Bar e Carregamento Dinâmico via Iframe</title>
+    <style>
+        /* Reset e Estilos Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Barra Superior (Menu Simples) */
+        .top-bar {
+            height: 30px;
+            background-color: #3c3c3c;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            border-bottom: 1px solid #616161;
+        }
+
+        .top-bar .logo {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-right: auto;
+        }
+
+        .top-bar .icons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .top-bar .icon {
+            width: 16px;
+            height: 16px;
+            background-color: #ffffff;
+            border-radius: 2px;
+            opacity: 0.7;
+        }
+
+        /* Container Principal */
+        .main-container {
+            flex: 1;
+            display: flex;
+        }
+
+        /* Activity Bar (Barra de Atividades à Esquerda) */
+        .activity-bar {
+            width: 50px;
+            background-color: #212121;
+            border-right: 1px solid #616161;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+            gap: 20px;
+        }
+
+        .activity-item {
+            width: 32px;
+            height: 32px;
+            background-color: #ffffff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #808080;
+            font-size: 16px;
+            transition: background-color 0.2s, color 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .activity-item:hover {
+            background-color: #3c3c3c;
+            color: #ffffff;
+        }
+
+        .activity-item.active {
+            background-color: #007acc;
+            color: #ffffff;
+            border-color: #007acc;
+        }
+
+        /* Área de Conteúdo Principal (Iframe para Carregamento Dinâmico) */
+        .content-area {
+            flex: 1;
+            background-color: #1e1e1e;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #1e1e1e;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #808080;
+            font-style: italic;
+            z-index: 10;
+        }
+    </style>
 </head>
 <body>
-  <div class="container my-4">
-    <h1>TrackSeparator</h1>
-    <p style="text-align: center;">Separate track and get the instrumental</p>
-  
-    <div class="mb-3" style="text-align: center;">
-      <label for="trackSelect" class="form-label">Choose the track to separate (You will get the track and instrumental):</label>
-      <select id="trackSelect" class="form-select">
-        <option selected value="vocals">Vocals</option>
-        <option value="drums">Drums</option>
-        <option value="bass">Bass</option>
-      </select>
+    
+
+    <!-- Container Principal -->
+    <div class="main-container">
+        <!-- Activity Bar com 4 Itens -->
+        <div class="activity-bar">
+            <div class="activity-item active" data-view="home">🏠</div> <!-- Home -->
+            <div class="activity-item" data-view="dashboard">📊</div> <!-- Dashboard -->
+            <div class="activity-item" data-view="settings">⚙️</div> <!-- Configurações -->
+            <div class="activity-item" data-view="profile">👤</div> <!-- Perfil -->
+        </div>
+
+        <!-- Área de Conteúdo (Container para Loading Dinâmico) -->
+        <div class="content-area">
+            <div class="loading" id="loading">Loading...</div>
+            <div id="content-area" class="p-4"></div>  <!-- Container para views -->
+        </div>
     </div>
-  </div>
 
-  <footer class="fixed-bottom bg-dark text-white py-3">
-    <div class="container">
-      <!-- Choose a file -->
-      <div class="row">
-        <div class="col-8">
-          <div class="mb-3">
-            <div class="row align-items-center g-2 path-row">
-              <div class="col-auto label-col">
-                <label class="form-label mb-0">Pick an audio file:</label>
-              </div>
-              <div class="col path-col">
-                <p id="filePath" class="text-muted small mb-0">File not selected yet...</p>
-              </div>
-              <div class="col-auto btn-col">
-                <button id="selectFileBtn" class="btn btn-primary btn-sm">...</button>
-              </div>
-            </div>
-            
-            <!-- Bit Rate Options-->
-            <div class="row align-items-center g-2 path-row">
-              <div class="col-auto label-col">
-                <label id="bitRateLabel" class="form-label small mb-0">Bit Rate:</label>
-              </div>
-              <div class="col path-col">
-                <p id="bitRate" class="text-muted small mb-0">Loading bit rate...</p>
-              </div>
-            </div>
-            <!-- Bit Rate Options-->
-            
-            <!-- Sample Rate Options-->
-            <div class="row align-items-center g-2 path-row">
-              <div class="col-auto label-col">
-                <label id="sampleRateLabel" class="form-label small mb-0">Sample Rate:</label>
-              </div>
-              <div class="col path-col">
-                <p id="sampleRate" class="text-muted small mb-0">Loading sample rate...</p>
-              </div>
-            </div>
-            <!-- Sample Rate Options-->
-            
-            <!-- Duration Options-->
-            <div class="row align-items-center g-2 path-row">
-              <div class="col-auto label-col">
-                <label id="durationLabel" class="form-label small mb-0">Duration:</label>
-              </div>
-              <div class="col path-col">
-                <p id="duration" class="text-muted small mb-0">Getting audio duration...</p>
-              </div>
-            </div>
-            <!-- Duration Options-->
+    <script>
+    // Mapeamento de itens da Activity Bar para arquivos HTML
+    const viewMap = {
+      home: 'views/home.html',
+      dashboard: 'views/dashboard.html',
+      settings: 'views/settings.html',
+      profile: 'views/profile.html'
+    };
 
-          </div>
-        </div>
+    // Função para carregar view via fetch (sem iframe)
+    function loadView(viewName) {
+      const contentArea = document.getElementById('content-area');
+      const loading = document.getElementById('loading');
+      const filePath = viewMap[viewName] || viewMap['home'];  // Fallback para home
 
-        <div class="col">
-          <!-- Empty col to balance the first row -->
-        </div>
-      </div>
+      loading.style.display = 'block';
+      contentArea.innerHTML = '';  // Limpa conteúdo anterior
 
-      <!-- Choose folder -->
-      <div class="row">
-        <div class="col-8">
-          <div class="mb-3">
-            <div class="row align-items-center g-2 path-row">
-              <div class="col-auto label-col">
-                <label class="form-label mb-0">Pick a folder to save:</label>
-              </div>
-              <div class="col path-col">
-                <p id="folderPath" class="text-muted small mb-0">Folder not selected yet...</p>
-              </div>
-              <div class="col-auto btn-col">
-                <button id="selectFolderBtn" class="btn btn-primary btn-sm">...</button>
-              </div>
-            </div>
-          </div>
-        </div>
+      fetch(filePath)
+        .then(response => response.text())
+        .then(html => {
+          contentArea.innerHTML = html;
+          loading.style.display = 'none';
+          
+          // Atualiza active na Activity Bar
+          document.querySelectorAll('.activity-item').forEach(item => item.classList.remove('active'));
+          document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
 
-        <div class="col d-flex justify-content-center align-items-center">
-          <button id="separateBtn" class="btn btn-success">Start Separation...</button>
-        </div>
-      </div>
-      <!-- Status with progressbar -->
-      <div id="status" style="text-align: center;"></div>
-      <!-- Status with progressbar -->
-    </div>
-  </footer>
-
-  <script>
-  const { ipcRenderer } = require('electron');
-  const selectFileBtn = document.getElementById('selectFileBtn');
-  const selectFolderBtn = document.getElementById('selectFolderBtn');
-  const separateBtn = document.getElementById('separateBtn');
-  const trackSelect = document.getElementById('trackSelect');
-  const filePathEl = document.getElementById('filePath');
-  const folderPathEl = document.getElementById('folderPath');
-  const status = document.getElementById('status');
-  const bitRateLabelEl = document.getElementById('bitRateLabel');
-  const sampleRateLabelEl = document.getElementById('sampleRateLabel');
-  const durationLabelEl = document.getElementById('durationLabel');
-  const bitRateEl = document.getElementById('bitRate');
-  const sampleRateEl = document.getElementById('sampleRate');
-  const durationEl = document.getElementById('duration');
-  
-  // Hide metadata labels and values initially
-  bitRateLabelEl.hidden = true;
-  sampleRateLabelEl.hidden = true;
-  durationLabelEl.hidden = true;
-  bitRateEl.hidden = true;
-  bitRateEl.textContent = 'Loading bit rate...';
-  sampleRateEl.hidden = true;
-  sampleRateEl.textContent = 'Loading sample rate...';
-  durationEl.hidden = true;
-  durationEl.textContent = 'Loading duration...';
-  // Hide metadata labels and values initially
-
-
-  let selectedFilePath = '';
-  let selectedFolderPath = '';
-
-  function shortenPath(path) {
-    if (!path || path.length <= 60) return path;
-
-    const userMatch = path.match(/^\/Users\/([^\/]+)/);
-    if (userMatch) {
-      const username = userMatch[1];
-      path = '~' + path.substring('/Users/'.length + username.length);
+          // Opcional: Execute script no novo conteúdo (se views tiverem <script>)
+          const scripts = contentArea.querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            newScript.textContent = script.textContent;
+            script.parentNode.replaceChild(newScript, script);
+          });
+        })
+        .catch(error => {
+          console.error('Failed to load view:', error);
+          contentArea.innerHTML = '<p>Error loading view. Check console.</p>';
+          loading.style.display = 'none';
+        });
     }
 
-    const parts = path.split('/').filter(p => p);
-    if (parts.length <= 4) return path;
-
-    const truncated = '/' + parts[0] + '/.../' + parts.slice(-3).join('/');
-    return truncated.length < path.length ? truncated : path;
-  }
-
-  // WebSocket instance
-  let ws = null;
-
-  selectFileBtn.addEventListener('click', async () => {
-    const result = await ipcRenderer.invoke('select-file');
-    if (!result.canceled && result.filePaths.length > 0) {
-      selectedFilePath = result.filePaths[0];
-      filePathEl.textContent = shortenPath(selectedFilePath);
-
-      try {
-        const metadata = await ipcRenderer.invoke('get-audio-bitrate', selectedFilePath);
-        bitRateEl.innerHTML = `
-          ${metadata.bitrate} kbps
-        `;
-        const br = parseInt(metadata.bitrate);
-        if(br < 192){
-          bitRateEl.innerHTML += ` <span class="text-warning">(Low quality audio detected)</span>`;
-        }
-        sampleRateEl.innerHTML = `
-          ${metadata.sampleRate}
-        `;
-        const timeSec = parseFloat(metadata.duration);
-        const totalSeconds = Math.ceil(timeSec);
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        durationEl.innerHTML = `
-        ${metadata.duration} seconds - (${minutes} min ${seconds} sec)
-        `;
-      } catch (err) {
-        bitRateEl.textContent = `Error reading metadata: ${err.message}`;
-      }
-      bitRateLabelEl.hidden = false;
-      sampleRateLabelEl.hidden = false;
-      durationLabelEl.hidden = false;
-      bitRateEl.hidden = false;
-      sampleRateEl.hidden = false;
-      durationEl.hidden = false;
-    }
-  });
-
-  selectFolderBtn.addEventListener('click', async () => {
-    const result = await ipcRenderer.invoke('select-folder');
-    if (!result.canceled && result.filePaths.length > 0) {
-      selectedFolderPath = result.filePaths[0];
-      folderPathEl.textContent = shortenPath(selectedFolderPath);
-    }
-  });
-
-  separateBtn.addEventListener('click', async () => {
-    if (!selectedFilePath || !selectedFolderPath) {
-      status.textContent = 'First select file and folder!';
-      status.hidden = false;
-      return;
-    }
-
-    separateBtn.disabled = true;
-    selectFileBtn.disabled = true;
-    selectFolderBtn.disabled = true;
-    status.hidden = false;
-    let progress = 0;
-    status.innerHTML = `
-      <p style="text-align: center;">Starting process: The separation will start soon...</p>
-      <div class="progress">
-        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-      </div>
-    `;
-
-    // Conect WebSocket for progress
-    ws = new WebSocket('ws://localhost:8000/ws/progress');
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.progress !== undefined) {
-        progress = data.progress;
-        const bar = document.getElementById('progressBar');
-        bar.style.width = `${progress}%`;
-        bar.textContent = `${progress}%`;
-        bar.setAttribute('aria-valuenow', progress);
-        if(progress === 0){
-          status.innerHTML = `
-            <p style="text-align: center;">Processing audio: Please wait...</p>
-            <div class="progress">
-              <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-            </div>
-          `;
-        }
-      }
-    };   
-
-    try {
-      const track = trackSelect.value;
-      const result = await ipcRenderer.invoke('separate-track', { 
-        input_path: selectedFilePath, 
-        output_dir: selectedFolderPath, 
-        track 
+    // Event listener para Activity Bar
+    document.querySelectorAll('.activity-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const viewName = item.dataset.view;
+        loadView(viewName);
       });
-      console.log('Python Output:', result);
-      if (result.success) {
-        ws.close();
-        ws.onclose = () => console.log('>> WebSocket is closed');
-        status.innerHTML += `
-        <br>Success! Files saved at:
-        <br>
-        <code>
-          ${result.output_file_track}
-        </code>
-        <br>
-        <code>
-          ${result.output_file_instrumental}
-        </code>`;
-      } else {
-        status.textContent = `Error: ${result.error}`;
-      }
-    } catch (err) {
-      console.error('Full Error On IPC:', err);
-      status.textContent = `Failed: ${err.message}`;
-      return;
-    }
-    separateBtn.disabled = false;
-    selectFileBtn.disabled = false;
-    selectFolderBtn.disabled = false;
-    status.hidden = true; // Hide status
-  });
-</script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    });
+
+    // Carrega a view inicial (home) ao abrir
+    loadView('home');
+  </script>
 </body>
 </html>

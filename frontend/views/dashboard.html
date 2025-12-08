@@ -1,0 +1,42 @@
+<!-- views/dashboard.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e; 
+            color: #d4d4d4; 
+            padding: 20px; 
+            margin: 0; 
+            height: 100vh; 
+            overflow: auto;
+        }
+        h1 { color: #ffffff; margin-bottom: 20px; font-size: 24px; }
+        h2 { color: #ffffff; margin: 20px 0 10px 0; font-size: 18px; }
+        p, li { line-height: 1.5; margin-bottom: 10px; color: #d4d4d4; }
+        ul { list-style-type: disc; padding-left: 20px; }
+        .card { background-color: #252526; padding: 15px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #007acc; }
+    </style>
+</head>
+<body>
+    <h1>Dashboard</h1>
+    <div class="card">
+        <h2>Métricas Atuais</h2>
+        <p>Vendas do mês: R$ 15.000</p>
+        <p>Usuários ativos: 1.200</p>
+        <p>Taxa de conversão: 3.5%</p>
+    </div>
+    <div class="card">
+        <h2>Gráfico Simulado</h2>
+        <p>Imagine um gráfico aqui (use Chart.js no Electron para real).</p>
+        <ul>
+            <li>Jan: 100 vendas</li>
+            <li>Fev: 150 vendas</li>
+            <li>Mar: 200 vendas</li>
+        </ul>
+    </div>
+    <p>Esta view pode incluir componentes dinâmicos ou dados carregados via fetch para o backend Node.js.</p>
+</body>
+</html>
